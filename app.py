@@ -491,10 +491,6 @@ with tab_7:
     st.subheader("Analítica Predictiva")
     st.markdown("**Predicción de desalojo**")
 
-    # Cargar el pipeline entrenado
-    pipeline_path = './artifacts/pipeline_rf_model.pkl'
-    loaded_clf = joblib.load(pipeline_path)
-
     # Formulario interactivo
     with st.form("formulario_prediccion"):
         st.markdown("Ingresa los valores para realizar la predicción:")
@@ -505,7 +501,7 @@ with tab_7:
             year = fecha.year
             month = fecha.month
             day = fecha.day
-            day_name = fecha.strftime("%A")  # Nombre del día en inglés
+            #day_name = fecha.strftime("%A")  # Nombre del día en inglés
 
             linea = st.selectbox("Línea", list(df_clean['Linea'].unique()))
 
@@ -526,22 +522,37 @@ with tab_7:
             'year': year,
             'month': month,
             'day': day,
-            'day_name': day_name,
             'Linea': linea,
             'Sistema': sistema,
             'Veh': veh,
             'long_desc': len(desc)
         }
 
-        # Ejecutar predicción
-        y_pred = loaded_clf.predict(pd.DataFrame([x_sample]))
+        # Cargar el pipeline de modelos entrenados
+        pipeline_classif = './artifacts/pipeline_rf_model_class.pkl'
+        loaded_clf = joblib.load(pipeline_classif)
 
+        pipeline_regr = './artifacts/pipeline_rf_model_regr.pkl'
+        loaded_regr = joblib.load(pipeline_regr)
+
+        # Ejecutar predicciones
+        y_pred_clf = loaded_clf.predict(pd.DataFrame([x_sample]))
+        y_pred_regr = loaded_regr.predict(pd.DataFrame([x_sample]))
+
+        # Probabilidad de desalojo
+        y_proba = loaded_clf.predict_proba(pd.DataFrame([x_sample]))
+
+        # Mostrar resultados
         st.markdown(
-            f"<div style='text-align:center; font-size:2rem; font-weight:bold; color:green;'>🔮 Habrá desalojo: <span style='color:#1f77b4'>{y_pred[0]}</span></div>",
+            f"<div style='text-align:center; font-size:2rem; font-weight:bold; color:blue;'>🔮 Minutos de retraso estimado: <span style='color:#1f77b4'>{round(y_pred_regr[0],2)}</span></div>",
             unsafe_allow_html=True
         )
 
-        st.write("**Probabilidades de desalojo:**")
-        y_proba = loaded_clf.predict_proba(pd.DataFrame([x_sample]))
-        proba_df = pd.DataFrame(y_proba, columns=loaded_clf.classes_)
-        st.dataframe(proba_df, use_container_width=True)
+        st.markdown(
+            f"<div style='text-align:center; font-size:2rem; font-weight:bold; color:blue;'>🔮 Probabilidad de desalojo: <span style='color:#1f77b4'>{round(y_proba[0][1]*100,2)}% </span></div>",
+            unsafe_allow_html=True
+        )
+
+        #st.subheader("Probabilidades de desalojo")
+        #proba_df = pd.DataFrame(y_proba, columns=loaded_clf.classes_)
+        #st.dataframe(proba_df, use_container_width=True)
